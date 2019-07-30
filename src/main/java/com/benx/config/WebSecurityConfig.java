@@ -80,6 +80,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 
     /**
      * 默认走用户的登录入口
+     *  在user 或者 admin 登录界面时,登录失败会跳转到默认配置的登录页面
      * @return
      */
     @Bean

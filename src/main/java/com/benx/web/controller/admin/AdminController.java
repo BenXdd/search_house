@@ -1,8 +1,14 @@
 package com.benx.web.controller.admin;
 
 import com.benx.base.ApiResponse;
+import com.benx.service.house.IQiNiuService;
+import com.benx.web.dto.QiNiuPutRet;
+import com.google.gson.Gson;
+import com.qiniu.common.QiniuException;
 import com.qiniu.common.Zone;
+import com.qiniu.http.Response;
 import com.qiniu.storage.UploadManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -14,9 +20,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Controller
 public class AdminController {
+
+    @Autowired
+    private IQiNiuService qiNiuService;
+
+    @Autowired
+    private Gson gson;
 
     /**
      * 后台管理中心
@@ -55,15 +68,41 @@ public class AdminController {
 
         //获取filename
         String fileName = file.getOriginalFilename();
-        //保存起来,存放在我们的tmo目录下
-        File target = new File("/Users/benx/IdeaProjects/search_house/tmp/"+fileName);
         try {
-            file.transferTo(target);
-        } catch (IOException e) {
-            e.printStackTrace();
+            InputStream inputStream = file.getInputStream();
+            Response response = qiNiuService.uploadFile(inputStream);
+            if (response.isOK()){
+                //使用gson解析返回结果 使用定义的dto格式
+              QiNiuPutRet ret = gson.fromJson(response.bodyString(), QiNiuPutRet.class);
+                return ApiResponse.ofSuccess(ret);
+            }
+            else {
+                return ApiResponse.ofMessage(response.statusCode,response.getInfo());
+            }
+        } catch (QiniuException e1){
+            e1.printStackTrace();
+            return ApiResponse.ofStatus(ApiResponse.Status.INTERNAL_SERVER_ERROR);
+        }catch (IOException e) {
             return ApiResponse.ofStatus(ApiResponse.Status.INTERNAL_SERVER_ERROR);
         }
-        return ApiResponse.ofSuccess(null);
+
+        /**
+         * 上传图片保存到本地
+         *
+         *
+         //保存起来,存放在我们的tmo目录下
+         File target = new File("/Users/benx/IdeaProjects/search_house/tmp/"+fileName);
+
+         try {
+         file.transferTo(target);
+         } catch (IOException e) {
+         e.printStackTrace();
+         return ApiResponse.ofStatus(ApiResponse.Status.INTERNAL_SERVER_ERROR);
+         }
+         return ApiResponse.ofSuccess(null);
+         *
+         */
+
     }
 
     /**

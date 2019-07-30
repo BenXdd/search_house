@@ -1,5 +1,6 @@
 package com.benx.config;
 
+import com.google.gson.Gson;
 import com.qiniu.common.Zone;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.UploadManager;
@@ -97,5 +98,14 @@ public class webFileUploadConfig {
     @Bean
     public BucketManager bucketManager(){
         return new BucketManager(auth(),qiniuConfig());
+    }
+
+    /**
+     * 解析返回数据
+     * @return
+     */
+    @Bean
+    public Gson gson(){
+        return new Gson();
     }
 }
