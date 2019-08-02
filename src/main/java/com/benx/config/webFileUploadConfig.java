@@ -65,6 +65,13 @@ public class webFileUploadConfig {
 
     /**
      * 华东机房
+     *
+     *  华东	Zone.zone0()
+     *  华北	Zone.zone1()
+     *  华南	Zone.zone2()
+     *  北美	Zone.zoneNa0()
+     *  东南亚	Zone.zoneAs0()
+     *  refer https://developer.qiniu.com/kodo/sdk/1239/java
      */
     @Bean
     public com.qiniu.storage.Configuration qiniuConfig() {

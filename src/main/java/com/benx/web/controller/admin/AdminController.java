@@ -105,27 +105,5 @@ public class AdminController {
 
     }
 
-    /**
-     * 华东机房
-     *
-     *  华东	Zone.zone0()
-     *  华北	Zone.zone1()
-     *  华南	Zone.zone2()
-     *  北美	Zone.zoneNa0()
-     *  东南亚	Zone.zoneAs0()
-     *  refer https://developer.qiniu.com/kodo/sdk/1239/java
-     */
-    @Bean
-    public com.qiniu.storage.Configuration qiniuConfig(){
-        return new com.qiniu.storage.Configuration(Zone.zone0());
-    }
-
-    /**
-     * 构建七牛上传工具实例
-     */
-    @Bean
-    public UploadManager uploadManager(){
-        return new UploadManager(qiniuConfig());
-    }
 
 }
