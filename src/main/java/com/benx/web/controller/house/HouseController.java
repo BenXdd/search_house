@@ -2,7 +2,7 @@ package com.benx.web.controller.house;
 
 import com.benx.base.ApiResponse;
 import com.benx.service.house.IAddressService;
-import com.benx.service.user.ServiceMultiResut;
+import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.SubwayDTO;
 import com.benx.web.dto.SubwayStationDTO;
 import com.benx.web.dto.SupportAddressDTO;
@@ -27,7 +27,7 @@ public class HouseController {
     @GetMapping("address/support/cities")
     @ResponseBody
     public ApiResponse getSupportCities(){
-        ServiceMultiResut<SupportAddressDTO> result = addressService.findAllCities();
+        ServiceMultiResult<SupportAddressDTO> result = addressService.findAllCities();
         if (result.getResultSize() == 0){
             return ApiResponse.ofSuccess(ApiResponse.Status.NOT_FOUND);
         }
@@ -42,7 +42,7 @@ public class HouseController {
     @GetMapping("address/support/regions")
     @ResponseBody
     public ApiResponse getSupportRegions(@RequestParam(name = "city_name")String cityEnName){
-        ServiceMultiResut<SupportAddressDTO> addressResult = addressService.findAllRegionByCityName(cityEnName);
+        ServiceMultiResult<SupportAddressDTO> addressResult = addressService.findAllRegionByCityName(cityEnName);
         if (addressResult.getResult() == null || addressResult.getTotal() < 1){
             return ApiResponse.ofStatus(ApiResponse.Status.NOT_FOUND);
         }

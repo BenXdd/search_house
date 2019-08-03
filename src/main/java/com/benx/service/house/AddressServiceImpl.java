@@ -7,7 +7,7 @@ import com.benx.repository.SubwayRepository;
 import com.benx.repository.SubwayStationRepository;
 import com.benx.repository.SupportAddressRepository;
 import com.benx.service.ServiceResult;
-import com.benx.service.user.ServiceMultiResut;
+import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.SubwayDTO;
 import com.benx.web.dto.SubwayStationDTO;
 import com.benx.web.dto.SupportAddressDTO;
@@ -36,7 +36,7 @@ public class AddressServiceImpl implements IAddressService{
     @Autowired
     private ModelMapper modelMapper;
     @Override
-    public ServiceMultiResut<SupportAddressDTO> findAllCities() {
+    public ServiceMultiResult<SupportAddressDTO> findAllCities() {
         List<SupportAddress> address = supportAddressRepository.findAllByLevel(SupportAddress.Level.CITY.getValue());
 
         //SupportAddress ---> SupportAddressDTO
@@ -46,7 +46,7 @@ public class AddressServiceImpl implements IAddressService{
             SupportAddressDTO target = modelMapper.map(supportAddress,SupportAddressDTO.class);
             addressDTOS.add(target);
         }
-        return new ServiceMultiResut<>(addressDTOS.size(),addressDTOS);
+        return new ServiceMultiResult<>(addressDTOS.size(),addressDTOS);
     }
 
     @Override
@@ -60,9 +60,9 @@ public class AddressServiceImpl implements IAddressService{
     }
 
     @Override
-    public ServiceMultiResut findAllRegionByCityName(String cityEnName) {
+    public ServiceMultiResult findAllRegionByCityName(String cityEnName) {
         if (cityEnName == null) {
-            return new ServiceMultiResut(0, null);
+            return new ServiceMultiResult(0, null);
         }
         List<SupportAddressDTO> result = new ArrayList<>();
 
@@ -71,7 +71,7 @@ public class AddressServiceImpl implements IAddressService{
         for (SupportAddress region : regions) {
             result.add(modelMapper.map(region,SupportAddressDTO.class));
         }
-        return new ServiceMultiResut(regions.size(), result);
+        return new ServiceMultiResult(regions.size(), result);
     }
 
     @Override

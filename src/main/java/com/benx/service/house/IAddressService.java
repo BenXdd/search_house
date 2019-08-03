@@ -2,7 +2,7 @@ package com.benx.service.house;
 
 import com.benx.entity.SupportAddress;
 import com.benx.service.ServiceResult;
-import com.benx.service.user.ServiceMultiResut;
+import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.SubwayDTO;
 import com.benx.web.dto.SubwayStationDTO;
 import com.benx.web.dto.SupportAddressDTO;
@@ -20,7 +20,7 @@ public interface IAddressService {
      * 支持所有城市列表
      * @return
      */
-    ServiceMultiResut<SupportAddressDTO> findAllCities();
+    ServiceMultiResult<SupportAddressDTO> findAllCities();
 
     /**
      * 根据英文简写获取具体区域信息
@@ -35,7 +35,7 @@ public interface IAddressService {
      * @param cityEnName
      * @return
      */
-    ServiceMultiResut findAllRegionByCityName(String cityEnName);
+    ServiceMultiResult findAllRegionByCityName(String cityEnName);
 
     /**
      * 获取该城市所有地铁线路

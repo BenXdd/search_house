@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * 通用多结果Service返回结构
  */
-public class ServiceMultiResut<T> {
+public class ServiceMultiResult<T> {
 
     private long total; //我们的列表/数据库总共有多少 条 数据
     private List<T> result;  //service 接口返回的列表数据
@@ -22,7 +22,7 @@ public class ServiceMultiResut<T> {
         return this.result.size();
     }
 
-    public ServiceMultiResut(long total, List<T> result) {
+    public ServiceMultiResult(long total, List<T> result) {
         this.total = total;
         this.result = result;
     }
