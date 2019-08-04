@@ -208,7 +208,7 @@
                 <div class="uploaded-list-container ">
                     <tr th:each="picture: ${house.pictures}">
                         <a th:href="${picture.cdnPrefix} + ${picture.path}">
-                            <img th:src="${picture.cdnPrefix} + ${picture.path}" width="150" height="100">
+                            <img th:src="${picture.cdnPrefix} +'/'+ ${picture.path}" width="150" height="100">
                             <input type="hidden" th:value="${picture.id}">
                         </a>
                     </tr>

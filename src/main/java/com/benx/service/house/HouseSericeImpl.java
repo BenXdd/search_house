@@ -1,18 +1,17 @@
 package com.benx.service.house;
 
+import com.benx.base.HouseStatus;
 import com.benx.base.LoginUserUtil;
 import com.benx.entity.*;
 import com.benx.repository.*;
 import com.benx.service.ServiceResult;
+import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.HouseDTO;
 import com.benx.web.dto.HouseDetailDTO;
 import com.benx.web.dto.HousePictureDTO;
-import com.benx.web.dto.HouseSubscribeDTO;
+import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
 import com.benx.web.form.PhotoForm;
-import com.google.common.collect.Maps;
-import com.qiniu.common.QiniuException;
-import com.qiniu.http.Response;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,9 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.criteria.Predicate;
 import java.util.*;
@@ -157,4 +154,102 @@ public class HouseSericeImpl implements IHouseSerivce{
 
     }
 
+    @Override
+    public ServiceMultiResult<HouseDTO> adminQuery(DatatableSearch searchBody) {
+        List<HouseDTO> houseDTOS = new ArrayList<>();
+
+        //1.排序 2. 字段名称
+        Sort sort = new Sort(Sort.Direction.fromString(searchBody.getDirection()), searchBody.getOrderBy());
+        // 从哪开始/ 每页长度
+        //分页页数 (第几页)
+        int page = searchBody.getStart() / searchBody.getLength();
+
+        /**
+         * searchBody.getStart()0
+         * searchBody.getLength()3
+         * page0
+         *
+         * searchBody.getStart()3
+         * searchBody.getLength()3
+         * page1
+         */
+        System.out.println("searchBody.getStart()" + searchBody.getStart());
+        System.out.println("searchBody.getLength()"+ searchBody.getLength());
+        System.out.println("page" + page);
+
+        //1.页数 2每页长度 3.排序方式
+        Pageable pageable = new PageRequest(page, searchBody.getLength(), sort);
+
+        //多条件查询
+        Specification<House> specification = (root, query, cb) -> {
+            //获取当前用户可以操作的房源    oot.get("adminId") -->对应house 里面的adminId
+            Predicate predicate = cb.equal(root.get("adminId"), LoginUserUtil.getLoginUserId());
+            //房源状态不是逻辑删除的
+            predicate = cb.and(predicate, cb.notEqual(root.get("status"), HouseStatus.DELETED.getValue()));
+            if (searchBody.getCity() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("cityEnName"), searchBody.getCity()));
+            }
+
+            if (searchBody.getStatus() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("status"), searchBody.getStatus()));
+            }
+
+            if (searchBody.getCreateTimeMin() != null) {
+                predicate = cb.and(predicate, cb.greaterThanOrEqualTo(root.get("createTime"), searchBody.getCreateTimeMin()));
+            }
+
+            if (searchBody.getCreateTimeMax() != null) {
+                predicate = cb.and(predicate, cb.lessThanOrEqualTo(root.get("createTime"), searchBody.getCreateTimeMax()));
+            }
+
+            if (searchBody.getTitle() != null) {
+                predicate = cb.and(predicate, cb.like(root.get("title"), "%" + searchBody.getTitle() + "%"));
+            }
+
+            return predicate;
+        };
+
+        Page<House> houses = houseRepository.findAll(specification,pageable);
+
+        houses.forEach(house -> {
+            HouseDTO houseDTO = modelMapper.map(house, HouseDTO.class);
+            houseDTO.setCover(this.cdnPrefix + house.getCover());
+            houseDTOS.add(houseDTO);
+        });
+
+        return new ServiceMultiResult<>(houses.getTotalElements(), houseDTOS);
+    }
+
+
+    @Override
+    public ServiceResult<HouseDTO> findCompleteOne(Long id) {
+
+        House house = houseRepository.findOne(id);
+        if (house == null){
+            return ServiceResult.notFound();
+        }
+        // houseDetail  houseTag  housePicture
+        HouseDetail houseDetail = houseDetailRepository.findByHouseId(id);
+        List<HousePicture> pictures = housePictureRepository.findAllByHouseId(id);
+        List<HouseTag> tags = houseTagRepository.findAllByHouseId(id);  //option+回车
+
+        //返回需要houseDTO  对应的detail picture  都需要是dto的  tag是List<String>
+        HouseDetailDTO houseDetailDTO = modelMapper.map(houseDetail,HouseDetailDTO.class);
+        List<HousePictureDTO> pictureDTOS = new ArrayList<>();
+        for (HousePicture picture : pictures) {
+            pictureDTOS.add(modelMapper.map(picture,HousePictureDTO.class));
+        }
+        List<String> tagList = new ArrayList<>();
+        for (HouseTag tag : tags) {
+            tagList.add(tag.getName());
+        }
+
+        HouseDTO result = modelMapper.map(house,HouseDTO.class);
+
+        result.setHouseDetail(houseDetailDTO);
+        result.setPictures(pictureDTOS);
+        result.setTags(tagList);
+
+        return ServiceResult.of(result);
+    }
 }

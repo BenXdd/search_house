@@ -1,14 +1,15 @@
 package com.benx.web.controller.admin;
 
+import com.benx.base.ApiDataTableResponse;
 import com.benx.base.ApiResponse;
 import com.benx.entity.SupportAddress;
 import com.benx.service.ServiceResult;
 import com.benx.service.house.IAddressService;
 import com.benx.service.house.IHouseSerivce;
 import com.benx.service.house.IQiNiuService;
-import com.benx.web.dto.HouseDTO;
-import com.benx.web.dto.QiNiuPutRet;
-import com.benx.web.dto.SupportAddressDTO;
+import com.benx.service.user.ServiceMultiResult;
+import com.benx.web.dto.*;
+import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
 import com.google.gson.Gson;
 import com.qiniu.common.QiniuException;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -72,6 +74,28 @@ public class AdminController {
         return "admin/house-add";
     }
 
+    /**
+     * 房屋列表页
+     * @return
+     */
+    @GetMapping("admin/house/list")
+    public String houesListPage(){
+        return "admin/house-list";
+    }
+
+    @PostMapping("admin/houses")
+    @ResponseBody
+    public ApiDataTableResponse houses(@ModelAttribute DatatableSearch searchBody) {
+        ServiceMultiResult<HouseDTO> result = houseSerivce.adminQuery(searchBody);
+
+        ApiDataTableResponse response = new ApiDataTableResponse(ApiResponse.Status.SUCCESS);
+        response.setData(result.getResult());
+        response.setRecordsFiltered(result.getTotal());
+        response.setRecordsTotal(result.getTotal());
+
+        response.setDraw(searchBody.getDraw());
+        return response;
+    }
     @PostMapping(value = "/admin/upload/photo",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody
     public ApiResponse uploadPhoto(@RequestParam("file") MultipartFile file){
@@ -151,6 +175,41 @@ public class AdminController {
             return ApiResponse.ofSuccess(result.getResult());
         }
         return ApiResponse.ofSuccess(ApiResponse.Status.NOT_VALID_PARAM);
+    }
+
+
+    /**
+     * 房源信息编辑页面
+     * @return
+     */
+    @GetMapping("admin/house/edit")
+    public String houseEditPage(@RequestParam("id")Long id , Model model){
+
+        if (id == null || id < 0){
+            return "404";
+        }
+        ServiceResult<HouseDTO> serviceResult = houseSerivce.findCompleteOne(id);
+        if (!serviceResult.isSuccess()){
+            return "404";
+        }
+        HouseDTO houseDTO = serviceResult.getResult();
+        //house信息
+        model.addAttribute("house",houseDTO);
+        //地点 城市 站点信息
+        Map<SupportAddress.Level,SupportAddressDTO> addressMap = addressService.findCityAndRegion(houseDTO.getCityEnName(), houseDTO.getRegionEnName());
+        model.addAttribute("city",addressMap.get(SupportAddress.Level.CITY));
+        model.addAttribute("region",addressMap.get(SupportAddress.Level.REGION));
+
+        HouseDetailDTO detailDTO = houseDTO.getHouseDetail();
+        ServiceResult<SubwayDTO> subwayServiceResult = addressService.findSubway(detailDTO.getSubwayLineId());
+        if (subwayServiceResult.isSuccess()){
+            model.addAttribute("subway",subwayServiceResult.getResult());
+        }
+        ServiceResult<SubwayStationDTO> subwayStationServiceResult = addressService.findSubwayStation(detailDTO.getSubwayStationId());
+        if (subwayStationServiceResult.isSuccess()){
+            model.addAttribute("station",subwayStationServiceResult.getResult());
+        }
+        return "admin/house-edit";
     }
 
 }

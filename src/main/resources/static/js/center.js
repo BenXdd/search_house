@@ -218,7 +218,7 @@ function loadWaitRecord() {
                             var house = tuple.first;
                             var content = '<li><input type="radio" name="houseId" value="' + house.id + '">预约此房源'
                                 + '<div class="cover fl">'
-                                + '<img src="http://pav17qjlw.bkt.clouddn.com/' + house.cover + '" width="100px" height="80px"></div> ' +
+                                + '<img src="http://pvefh8bv0.bkt.clouddn.com/' + house.cover + '" width="100px" height="80px"></div> ' +
                                 '<div class="info fl"><a><h1>' + house.title + '</h1></a><div class="des1">' +
                                 '<i></i><span><a href="#" target="_blank">' + house.district + '</a></span>' +
                                 '<span class="line">|</span><span>' + house.room + '室' + house.parlour + '厅</span>'
