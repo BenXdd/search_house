@@ -11,6 +11,7 @@ import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.*;
 import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.qiniu.common.QiniuException;
 import com.qiniu.common.Zone;
@@ -210,6 +211,106 @@ public class AdminController {
             model.addAttribute("station",subwayStationServiceResult.getResult());
         }
         return "admin/house-edit";
+    }
+
+
+    /**
+     * 编辑house接口
+     * @param houseForm
+     * @param bindingResult
+     * @return
+     */
+    @PostMapping("admin/house/edit")
+    @ResponseBody
+    public ApiResponse saveHouse(@Valid @ModelAttribute("form-house-edit")HouseForm houseForm,BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return new ApiResponse(
+                    HttpStatus.BAD_REQUEST.value(),
+                    bindingResult.getAllErrors().get(0).getDefaultMessage(),
+                    null);
+        }
+        //地址信息是否正常
+        Map<SupportAddress.Level, SupportAddressDTO> addressMap = addressService.findCityAndRegion(houseForm.getCityEnName(), houseForm.getRegionEnName());
+        if (addressMap.keySet().size() != 2) {
+            //地址必须有city 和region 不为2就是 error
+            return ApiResponse.ofStatus(ApiResponse.Status.NOT_VALID_PARAM);
+        }
+        ServiceResult result = houseSerivce.update(houseForm);
+        if (result.isSuccess()) {
+            return ApiResponse.ofSuccess(null);
+        }
+        return ApiResponse.ofStatus(ApiResponse.Status.BAD_REQUEST, result.getMessage());
+
+    }
+
+
+    /**
+     * 移除图片接口
+     * @param id
+     * @return
+     */
+    @DeleteMapping("admin/house/photo")
+    @ResponseBody
+    public ApiResponse removeHousePhoto(@RequestParam(value = "id")Long id){
+        ServiceResult result = this.houseSerivce.removePhoto(id);
+        if (result.isSuccess()){
+            return ApiResponse.ofStatus(ApiResponse.Status.SUCCESS);
+        }
+        return ApiResponse.ofMessage(HttpStatus.BAD_REQUEST.value(),result.getMessage());
+    }
+
+    /**
+     * 修改封面接口
+     * @param coverId
+     * @param targetId  house的id
+     * @return
+     */
+    @PostMapping("admin/house/cover")
+    @ResponseBody
+    public ApiResponse updateCover(@RequestParam(value = "cover_id")Long coverId, @RequestParam(value = "target_id") Long targetId){
+        ServiceResult result = this.houseSerivce.updateCover(coverId, targetId);
+        if (result.isSuccess()){
+            return ApiResponse.ofStatus(ApiResponse.Status.SUCCESS);
+        }
+        return ApiResponse.ofMessage(HttpStatus.BAD_REQUEST.value(),result.getMessage());
+    }
+
+    /**
+     * 增加标签接口
+     * @param houseId
+     * @param tag
+     * @return
+     */
+    @PostMapping("admin/house/tag")
+    @ResponseBody
+    public ApiResponse addHouseTag(@RequestParam(value = "house_id")Long houseId, @RequestParam(value = "tag")String tag){
+        if (houseId <  1 || Strings.isNullOrEmpty(tag)){
+            return  ApiResponse.ofStatus(ApiResponse.Status.BAD_REQUEST);
+        }
+        ServiceResult result = this.houseSerivce.addTag(houseId,tag);
+        if (result.isSuccess()){
+            return ApiResponse.ofStatus(ApiResponse.Status.SUCCESS);
+        }
+        return ApiResponse.ofMessage(HttpStatus.BAD_REQUEST.value(),result.getMessage());
+    }
+
+    /**
+     * 移除标签接口
+     * @param houseId
+     * @param tag
+     * @return
+     */
+    @DeleteMapping("admin/house/tag")
+    @ResponseBody
+    public ApiResponse removeHouseTag(@RequestParam(value = "house_id")Long houseId, @RequestParam(value = "tag")String tag){
+        if (houseId < 1 || Strings.isNullOrEmpty(tag)){
+            return ApiResponse.ofStatus(ApiResponse.Status.BAD_REQUEST);
+        }
+        ServiceResult result = this.houseSerivce.removeTag(houseId, tag);
+        if (result.isSuccess()){
+            return ApiResponse.ofStatus(ApiResponse.Status.SUCCESS);
+        }
+        return ApiResponse.ofMessage(HttpStatus.BAD_REQUEST.value(),result.getMessage());
     }
 
 }

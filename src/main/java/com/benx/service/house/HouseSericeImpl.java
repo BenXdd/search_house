@@ -12,6 +12,8 @@ import com.benx.web.dto.HousePictureDTO;
 import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
 import com.benx.web.form.PhotoForm;
+import com.qiniu.common.QiniuException;
+import com.qiniu.http.Response;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +23,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.criteria.Predicate;
 import java.util.*;
 
 @Service
-public class HouseSericeImpl implements IHouseSerivce{
+public class HouseSericeImpl implements IHouseSerivce {
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
@@ -41,7 +44,7 @@ public class HouseSericeImpl implements IHouseSerivce{
     private SubwayRepository subwayRepository;
     @Autowired
     private SubwayStationRepository subwayStationRepository;
-//    @Autowired
+    //    @Autowired
 //    private HouseSubscribeRespository subscribeRespository;
 //    @Autowired
 //    private ISearchService searchService;
@@ -62,7 +65,7 @@ public class HouseSericeImpl implements IHouseSerivce{
         House house = new House();
         modelMapper.map(houseForm, house);
 
-        Date now=new Date();
+        Date now = new Date();
         house.setCreateTime(now);
         house.setLastUpdateTime(now);
         house.setAdminId(LoginUserUtil.getLoginUserId());
@@ -99,6 +102,7 @@ public class HouseSericeImpl implements IHouseSerivce{
 
     /**
      * 图片对象列表信息填充
+     *
      * @param form
      * @param houseId
      * @return
@@ -123,6 +127,7 @@ public class HouseSericeImpl implements IHouseSerivce{
 
     /**
      * 房源详细信息对象填充
+     *
      * @param houseDetail
      * @param houseForm
      * @return
@@ -174,7 +179,7 @@ public class HouseSericeImpl implements IHouseSerivce{
          * page1
          */
         System.out.println("searchBody.getStart()" + searchBody.getStart());
-        System.out.println("searchBody.getLength()"+ searchBody.getLength());
+        System.out.println("searchBody.getLength()" + searchBody.getLength());
         System.out.println("page" + page);
 
         //1.页数 2每页长度 3.排序方式
@@ -209,7 +214,7 @@ public class HouseSericeImpl implements IHouseSerivce{
             return predicate;
         };
 
-        Page<House> houses = houseRepository.findAll(specification,pageable);
+        Page<House> houses = houseRepository.findAll(specification, pageable);
 
         houses.forEach(house -> {
             HouseDTO houseDTO = modelMapper.map(house, HouseDTO.class);
@@ -225,7 +230,7 @@ public class HouseSericeImpl implements IHouseSerivce{
     public ServiceResult<HouseDTO> findCompleteOne(Long id) {
 
         House house = houseRepository.findOne(id);
-        if (house == null){
+        if (house == null) {
             return ServiceResult.notFound();
         }
         // houseDetail  houseTag  housePicture
@@ -234,22 +239,127 @@ public class HouseSericeImpl implements IHouseSerivce{
         List<HouseTag> tags = houseTagRepository.findAllByHouseId(id);  //option+回车
 
         //返回需要houseDTO  对应的detail picture  都需要是dto的  tag是List<String>
-        HouseDetailDTO houseDetailDTO = modelMapper.map(houseDetail,HouseDetailDTO.class);
+        HouseDetailDTO houseDetailDTO = modelMapper.map(houseDetail, HouseDetailDTO.class);
         List<HousePictureDTO> pictureDTOS = new ArrayList<>();
         for (HousePicture picture : pictures) {
-            pictureDTOS.add(modelMapper.map(picture,HousePictureDTO.class));
+            pictureDTOS.add(modelMapper.map(picture, HousePictureDTO.class));
         }
         List<String> tagList = new ArrayList<>();
         for (HouseTag tag : tags) {
             tagList.add(tag.getName());
         }
 
-        HouseDTO result = modelMapper.map(house,HouseDTO.class);
+        HouseDTO result = modelMapper.map(house, HouseDTO.class);
 
         result.setHouseDetail(houseDetailDTO);
         result.setPictures(pictureDTOS);
         result.setTags(tagList);
 
         return ServiceResult.of(result);
+    }
+
+
+    @Override
+    @Transactional
+    public ServiceResult update(HouseForm houseForm) {
+        House house = houseRepository.findOne(houseForm.getId());
+        if (house == null) {
+            return ServiceResult.notFound();
+        }
+
+        HouseDetail detail = houseDetailRepository.findByHouseId(house.getId());
+        if (detail == null) {
+            return ServiceResult.notFound();
+        }
+
+        ServiceResult wrapperResult = wrapperDetailInfo(detail, houseForm);
+
+        if (wrapperResult != null) {
+            return wrapperResult;
+        }
+        houseDetailRepository.save(detail);
+        List<HousePicture> pictures = generatePictures(houseForm, houseForm.getId());
+
+        housePictureRepository.save(pictures);
+
+        //如果cover数据没有返回 让其使用原先的
+        if (houseForm.getCover() == null) {
+            houseForm.setCover(house.getCover());
+        }
+        //houseForm 存到house中
+        modelMapper.map(houseForm, house);
+        house.setLastUpdateTime(new Date());
+
+        houseRepository.save(house);
+        return ServiceResult.success();
+    }
+
+
+    /**
+     * 先删服务器端成功后  --> 删除本地端
+     * @param id
+     * @return
+     */
+    @Override
+    public ServiceResult removePhoto(Long id) {
+        HousePicture housePicture = housePictureRepository.findOne(id);
+        if (housePicture == null){
+            return ServiceResult.notFound();
+        }
+
+        try {
+            //云删除
+            Response response = this.qiNiuService.delete(housePicture.getPath());
+            if (response.isOK()){
+                housePictureRepository.delete(id);
+                return ServiceResult.success();
+            }else {
+                return new ServiceResult(false,response.error);
+            }
+        } catch (QiniuException e) {
+            e.printStackTrace();
+            return new ServiceResult(false,e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ServiceResult updateCover(Long coverId, Long targetId) {
+       HousePicture cover = housePictureRepository.findOne(coverId);
+       if (cover == null){
+           return ServiceResult.notFound();
+       }
+       houseRepository.updateCover(targetId,cover.getPath());
+        return ServiceResult.success();
+    }
+
+    @Override
+    @Transactional
+    public ServiceResult addTag(Long houseId, String tag) {
+        House house = houseRepository.findOne(houseId);
+        if (house == null){
+            return ServiceResult.notFound();
+        }
+        HouseTag houseTag = houseTagRepository.findByNameAndHouseId(tag,houseId);
+        if (houseTag != null){
+            return new ServiceResult(false,"标签已经存在");
+        }
+        houseTagRepository.save(new HouseTag(houseId,tag));
+        return ServiceResult.success();
+    }
+
+    @Override
+    @Transactional
+    public ServiceResult removeTag(Long houseId, String tag) {
+        House house = houseRepository.findOne(houseId);
+        if (house == null){
+            return ServiceResult.notFound();
+        }
+        HouseTag houseTag = houseTagRepository.findByNameAndHouseId(tag, houseId);
+        if (houseTag == null){
+            return new ServiceResult(false, "标签不存在");
+        }
+        houseTagRepository.delete(houseTag.getId());
+        return ServiceResult.success();
     }
 }

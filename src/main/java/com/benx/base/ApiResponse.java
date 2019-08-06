@@ -64,6 +64,9 @@ public class ApiResponse {
     public static ApiResponse ofStatus(Status status) {
         return new ApiResponse(status.getCode(), status.getStandardMessage(), null);
     }
+    public static ApiResponse ofStatus(Status status,String msg) {
+        return new ApiResponse(status.getCode(), status.getStandardMessage(), null);
+    }
 
     public enum Status {
         SUCCESS(200, "OK"),
