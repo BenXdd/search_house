@@ -1,4 +1,4 @@
-package com.benx.service.house.search;
+package com.benx.service.search;
 
 /**
  * 索引关键词统一定义

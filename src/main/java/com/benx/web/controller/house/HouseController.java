@@ -7,7 +7,7 @@ import com.benx.service.IUserService;
 import com.benx.service.ServiceResult;
 import com.benx.service.house.IAddressService;
 import com.benx.service.house.IHouseSerivce;
-import com.benx.service.house.search.ISearchService;
+import com.benx.service.search.ISearchService;
 import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.*;
 import com.benx.web.form.RentSearch;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

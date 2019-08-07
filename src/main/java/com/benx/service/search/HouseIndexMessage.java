@@ -1,4 +1,4 @@
-package com.benx.service.house.search;
+package com.benx.service.search;
 
 /**
  * Created by coddingchaozhang.

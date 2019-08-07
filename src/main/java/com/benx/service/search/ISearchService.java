@@ -1,4 +1,4 @@
-package com.benx.service.house.search;
+package com.benx.service.search;
 
 import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.form.RentSearch;

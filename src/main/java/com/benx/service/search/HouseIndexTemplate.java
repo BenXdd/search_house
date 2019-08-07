@@ -1,4 +1,4 @@
-package com.benx.service.house.search;
+package com.benx.service.search;
 
 import java.util.Date;
 import java.util.List;
