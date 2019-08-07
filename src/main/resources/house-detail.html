@@ -85,7 +85,7 @@
             <div class="imgContainer layui-carousel" id="overview-photos">
                 <div carousel-item>
                     <div th:each="picture : ${house.pictures}">
-                        <img th:src="${picture.cdnPrefix+'/' + picture.path}"/>
+                        <img th:src="${picture.cdnPrefix + picture.path}"/>
                     </div>
                 </div>
             </div>

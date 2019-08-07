@@ -2,7 +2,7 @@ package com.benx.web.form;
 
 /**
  * 租房请求参数结构体
- * Created by codingchaozhang.
+ *
  */
 public class RentSearch {
     private String cityEnName;

@@ -1,6 +1,7 @@
 package com.benx.service;
 
 import com.benx.entity.User;
+import com.benx.web.dto.UserDTO;
 
 /**
  * 用户服务
@@ -8,4 +9,6 @@ import com.benx.entity.User;
 public interface IUserService {
 
     User findUserByName(String userName);
+
+    ServiceResult<UserDTO> findById(Long adminId);
 }

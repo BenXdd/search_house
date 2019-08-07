@@ -5,6 +5,7 @@ import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.HouseDTO;
 import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
+import com.benx.web.form.RentSearch;
 
 /**
  * 房屋管理服务接口
@@ -68,4 +69,19 @@ public interface IHouseSerivce {
      * @return
      */
     ServiceResult removeTag(Long houseId, String tag);
+
+    /**
+     * 更新房源状态
+     * @param id
+     * @param status
+     * @return
+     */
+    ServiceResult updateStatus(Long id, int status);
+
+    /**
+     * 前台查询房源信息集
+     * @param rentSearch
+     * @return
+     */
+    ServiceMultiResult<HouseDTO> query(RentSearch rentSearch);
 }

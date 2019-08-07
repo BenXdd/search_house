@@ -30,7 +30,7 @@
                         <div class="txt-search">
                             <input class="left txt" name="keyword" autocomplete="off"
                                    placeholder="如小区名、地铁站等" id="keyword-box"
-                                   th:value="${searchBody.keywords != null} ? ${searchBody.keywords} : ''"/>
+                                    th:value="${searchBody.keywords != null} ? ${searchBody.keywords} : ''"/>
                         </div>
                     </div>
                     <button type="submit" class="act-search btn home-ico ico-search LOGCLICKEVTID">
@@ -321,8 +321,8 @@
 <script type='text/javascript'>
     (function(m, ei, q, i, a, j, s) {
         m[i] = m[i] || function() {
-            (m[i].a = m[i].a || []).push(arguments)
-        };
+                (m[i].a = m[i].a || []).push(arguments)
+            };
         j = ei.createElement(q),
             s = ei.getElementsByTagName(q)[0];
         j.async = true;
@@ -335,12 +335,15 @@
 <script src="/static/lib/layui/layui.js" type="text/javascript"></script>
 <script th:inline="javascript" type="text/javascript">
     $('.xunwu-header .rent-page').addClass('on');
+
     var data = {};
+
     function locate_url(start, size) {
         var keywords = $('#keyword-box').val();
         if (typeof(keywords) !== 'undefined' && keywords !== null && keywords.length > 0) {
             data.keywords = keywords;
         }
+
         var target = '/rent/house?cityEnName=' + [[${searchBody.cityEnName}]] + '&';
         $.each(data, function (key, value) {
             target += (key + '=' + value + '&');
@@ -348,6 +351,7 @@
         target += 'start=' + start + '&size=' + size;
         return target;
     }
+
     function changeSimpleCondition(key, value) {
         switch (key) {
             case '*':
@@ -358,17 +362,21 @@
         }
         window.location.href = locate_url(0, [[${searchBody.size}]]);
     }
+
     function changeSort(orderBy, direction) {
         data.orderBy = orderBy;
         data.orderDirection = direction;
+
         window.location.href = locate_url(0, [[${searchBody.size}]]);
     }
+
     var total = [[${total}]];
     var start = [[${searchBody.start}]];
     var size = [[${searchBody.size}]];
     if (size < 1) {
         size = 5;
     }
+
     $(function () {
         data.priceBlock = [[${currentPriceBlock.key}]];
         data.areaBlock = [[${currentAreaBlock.key}]];
@@ -378,6 +386,7 @@
         data.rentWay = [[${searchBody.rentWay}]];
         data.orderBy = [[${searchBody.orderBy}]];
         data.orderDirection = [[${searchBody.orderDirection}]];
+
         $('.region-select a[data-bind="' + [[${searchBody.regionEnName}]] + '"]').addClass('on');
         $('.price-select a[data-bind="' + [[${currentPriceBlock.key}]] + '"]').addClass('on');
         $('.area-select a[data-bind="' + [[${currentAreaBlock.key}]] + '"]').addClass('on');
@@ -385,6 +394,7 @@
         $('.direction-select a[data-bind="' + [[${searchBody.direction}]] + '"]').addClass('on');
         $('.rent-way-select a[data-bind="' + [[${searchBody.rentWay}]] + '"]').addClass('on');
         $('#sort-bar').find('div[data-bind="' + data.orderBy +  '"]').addClass('on');
+
         if (data.orderBy === 'area') {
             var areaSpanText = '';
             if (data.orderDirection == 'desc') {
@@ -394,10 +404,12 @@
             }
             $('#sort-bar').find('div[data-bind="area"] span').text(areaSpanText);
         }
+
         $('#searchForm').submit(function () {
             window.location.href = locate_url(start, size);
             return false;
         });
+
         var availableTags = [
             "ActionScript",
             "AppleScript",
@@ -422,6 +434,7 @@
             "Scala",
             "Scheme"
         ];
+
         $('#keyword-box').autocomplete({
             minLength: 2, // 最小字符数，默认1
             delay: 300, // 延迟加载300ms
@@ -440,9 +453,12 @@
                 window.location.href = locate_url(start, size);
             }
         });
+
     });
+
     layui.use('laypage', function () {
         var laypage = layui.laypage;
+
         //执行一个laypage实例
         laypage.render({
             elem: 'pageable', //注意，这里的 test1 是 ID，不用加 # 号
@@ -453,6 +469,7 @@
                 //obj包含了当前分页的所有参数，比如：
 //                console.log(obj.curr); //得到当前页，以便向服务端请求对应页的数据。
 //                console.log(obj.limit); //得到每页显示的条数
+
                 //首次不执行
                 if (!first) {
                     window.location.href = locate_url((obj.curr - 1) * obj.limit, obj.limit);

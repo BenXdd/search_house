@@ -1,5 +1,6 @@
 package com.benx.service.house;
 
+import com.benx.base.HouseSort;
 import com.benx.base.HouseStatus;
 import com.benx.base.LoginUserUtil;
 import com.benx.entity.*;
@@ -12,6 +13,8 @@ import com.benx.web.dto.HousePictureDTO;
 import com.benx.web.form.DatatableSearch;
 import com.benx.web.form.HouseForm;
 import com.benx.web.form.PhotoForm;
+import com.benx.web.form.RentSearch;
+import com.google.common.collect.Maps;
 import com.qiniu.common.QiniuException;
 import com.qiniu.http.Response;
 import org.modelmapper.ModelMapper;
@@ -361,5 +364,79 @@ public class HouseSericeImpl implements IHouseSerivce {
         }
         houseTagRepository.delete(houseTag.getId());
         return ServiceResult.success();
+    }
+
+    @Override
+    @Transactional
+    public ServiceResult updateStatus(Long id, int status) {
+        House house = this.houseRepository.findOne(id);
+        if (house == null){
+            return ServiceResult.notFound();
+        }
+        if (house.getStatus() == status){
+            return new ServiceResult(false,"状态没有发生改变");
+        }
+        if (house.getStatus() == HouseStatus.RENTED.getValue()){
+            return new ServiceResult(false,"已出租房屋不许修改状态");
+        }
+        if (house.getStatus() == HouseStatus.DELETED.getValue()){
+            return new ServiceResult(false,"已删除资源不许修改操作");
+        }
+        houseRepository.updateStatus(id,status);
+
+        return ServiceResult.success();
+    }
+
+    @Override
+    public ServiceMultiResult<HouseDTO> query(RentSearch rentSearch) {
+        Sort sort = HouseSort.generateSort(rentSearch.getOrderBy(), rentSearch.getOrderDirection());
+        int page = rentSearch.getStart() / rentSearch.getSize(); //第几页
+        Pageable pageable = new PageRequest(page,rentSearch.getSize(),sort);
+        //删除的数据不能查到
+        Specification<House> specification= (root, query, cb) -> {
+            //审核
+            Predicate predicate = cb.equal(root.get("status"),HouseStatus.PASSES.getValue());
+            //城市相同
+            predicate = cb.and(predicate,cb.equal(root.get("cityEnName"),rentSearch.getCityEnName()));
+            //地铁距离
+            if (HouseSort.DISTANCE_TO_SUBWAY_KEY.equals(rentSearch.getOrderBy())) {
+                predicate = cb.and(predicate, cb.gt(root.get(HouseSort.DISTANCE_TO_SUBWAY_KEY), -1));
+            }
+            return predicate;
+        };
+        Page<House> houses = houseRepository.findAll(specification,pageable);
+        List<HouseDTO> houseDTOS = new ArrayList<>();
+        List<Long> houseIds = new ArrayList<>();
+
+        Map<Long, HouseDTO> idToHouseMap = Maps.newHashMap();
+        houses.forEach(house -> {
+            HouseDTO houseDTO = modelMapper.map(house,HouseDTO.class);
+            houseDTO.setCover(this.cdnPrefix+house.getCover());
+            houseDTOS.add(houseDTO);
+            houseIds.add(house.getId());
+            idToHouseMap.put(house.getId(),houseDTO);
+        });
+
+        wrapperHouseList(houseIds,idToHouseMap);
+        return new ServiceMultiResult<>(houses.getTotalElements(),houseDTOS);
+    }
+    /**
+     * 渲染详细信息 及 标签
+     * @param houseIds
+     * @param idToHouseMap
+     */
+    private void wrapperHouseList(List<Long> houseIds, Map<Long, HouseDTO> idToHouseMap) {
+        List<HouseDetail> details = houseDetailRepository.findAllByHouseIdIn(houseIds);
+        details.forEach(houseDetail -> {
+            HouseDTO houseDTO = idToHouseMap.get(houseDetail.getHouseId());
+            HouseDetailDTO detailDTO = modelMapper.map(houseDetail, HouseDetailDTO.class);
+            houseDTO.setHouseDetail(detailDTO);
+        });
+
+        List<HouseTag> houseTags = houseTagRepository.findAllByHouseIdIn(houseIds);
+        houseTags.forEach(houseTag -> {
+            HouseDTO house = idToHouseMap.get(houseTag.getHouseId());
+            house.getTags().add(houseTag.getName());
+        });
     }
 }

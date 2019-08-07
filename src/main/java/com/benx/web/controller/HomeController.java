@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 public class HomeController {
 
-    @GetMapping("/")
+    @GetMapping(value = {"/","/index"})
     public String index(Model model){
         //model.addAttribute("name","456");
         //thymeleaf默认会给它加一个前缀(template,在classpath下寻找)

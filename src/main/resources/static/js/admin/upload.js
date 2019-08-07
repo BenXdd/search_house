@@ -549,7 +549,7 @@
                 '<div style="float: left; margin: 2px; padding: 2px; border: 1px dashed; width:' +
                 ' 120px; height: 100px;">' +
                 '<span><img src="http://pvefh8bv0.bkt.clouddn.com/' +
-                photo_path + '?imageView2/1/w/100/h/100" title="待选封面" />' +
+                photo_path + 'FjYbB9-SD2yI3BKdjcWk3u7Ok6aU" title="待选封面" />' +
                 '<input style="margin-left: 5px;" type="radio" name="cover" value="' +
                 photo_path + '"/></span></div>'
             );
