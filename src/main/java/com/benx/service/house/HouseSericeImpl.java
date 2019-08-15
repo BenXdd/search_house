@@ -6,6 +6,7 @@ import com.benx.base.LoginUserUtil;
 import com.benx.entity.*;
 import com.benx.repository.*;
 import com.benx.service.ServiceResult;
+import com.benx.service.search.ISearchService;
 import com.benx.service.user.ServiceMultiResult;
 import com.benx.web.dto.HouseDTO;
 import com.benx.web.dto.HouseDetailDTO;
@@ -49,8 +50,8 @@ public class HouseSericeImpl implements IHouseSerivce {
     private SubwayStationRepository subwayStationRepository;
     //    @Autowired
 //    private HouseSubscribeRespository subscribeRespository;
-//    @Autowired
-//    private ISearchService searchService;
+    @Autowired
+    private ISearchService searchService;
     @Autowired
     private IQiNiuService qiNiuService;
 
@@ -294,6 +295,11 @@ public class HouseSericeImpl implements IHouseSerivce {
         house.setLastUpdateTime(new Date());
 
         houseRepository.save(house);
+
+        if (house.getStatus() == HouseStatus.PASSES.getValue()){
+            searchService.index(house.getId());
+        }
+
         return ServiceResult.success();
     }
 
@@ -383,12 +389,53 @@ public class HouseSericeImpl implements IHouseSerivce {
             return new ServiceResult(false,"已删除资源不许修改操作");
         }
         houseRepository.updateStatus(id,status);
+        //上架更新索引  其他情况都要删除索引
 
+        if (status == HouseStatus.PASSES.getValue()){
+            searchService.index(house.getId());
+        }else {
+            searchService.remove(house.getId());
+        }
         return ServiceResult.success();
+    }
+
+    private List<HouseDTO> wrapperHouseResult(List<Long> houseIds){
+        List<HouseDTO> res = new ArrayList<>();
+
+        Map<Long, HouseDTO> idToHouseMap = new HashMap<>();
+        Iterable<House> houses = houseRepository.findAll(houseIds);
+        houses.forEach(house -> {
+            HouseDTO houseDTO = modelMapper.map(house,HouseDTO.class);
+            houseDTO.setCover(this.cdnPrefix+ house.getCover());
+            idToHouseMap.put(house.getId(),houseDTO);
+        });
+
+        //渲染housetag houseDetail  映射到houseDto中
+        wrapperHouseList(houseIds,idToHouseMap);
+
+        //es查到的顺序和mysql查到的顺序不一定一致  矫正顺序 向es的顺序
+        for (Long houseId : houseIds) {
+            res.add(idToHouseMap.get(houseId));
+        }
+        return res;
     }
 
     @Override
     public ServiceMultiResult<HouseDTO> query(RentSearch rentSearch) {
+        if (rentSearch.getKeywords() != null && !rentSearch.getKeywords().isEmpty()){
+            ServiceMultiResult<Long> serviceResult = searchService.query(rentSearch);
+            if (serviceResult.getTotal() == 0 ){
+                return new ServiceMultiResult<>(0, new ArrayList<>());
+            }
+            //有结果的话用houseId来查 封装方法
+            return new ServiceMultiResult<>(serviceResult.getTotal(),wrapperHouseResult(serviceResult.getResult()));
+        }
+
+        return simpleQuery(rentSearch);
+    }
+
+    //mysql 的query
+    private ServiceMultiResult<HouseDTO> simpleQuery(RentSearch rentSearch){
         Sort sort = HouseSort.generateSort(rentSearch.getOrderBy(), rentSearch.getOrderDirection());
         int page = rentSearch.getStart() / rentSearch.getSize(); //第几页
         Pageable pageable = new PageRequest(page,rentSearch.getSize(),sort);
@@ -404,6 +451,7 @@ public class HouseSericeImpl implements IHouseSerivce {
             }
             return predicate;
         };
+
         Page<House> houses = houseRepository.findAll(specification,pageable);
         List<HouseDTO> houseDTOS = new ArrayList<>();
         List<Long> houseIds = new ArrayList<>();

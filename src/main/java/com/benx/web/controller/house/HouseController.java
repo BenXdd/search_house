@@ -158,6 +158,7 @@ public class HouseController {
         //选择的区间
         model.addAttribute("currentPriceBlock",RentValueBlock.matchPrice(rentSearch.getPriceBlock()));
         model.addAttribute("currentAreaBlock",RentValueBlock.matchArea(rentSearch.getAreaBlock()));
+
         return "rent-list";
 
     }

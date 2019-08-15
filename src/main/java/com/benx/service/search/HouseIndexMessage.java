@@ -1,7 +1,7 @@
 package com.benx.service.search;
 
 /**
- * Created by coddingchaozhang.
+ * Created by benx.
  */
 public class HouseIndexMessage {
 
@@ -12,7 +12,7 @@ public class HouseIndexMessage {
 
     private Long houseId;
     private String operation;
-    private int retry = 0;
+    private int retry = 0;  //重复消费次数
 
     /**
      * 默认构造器 防止jackson序列化失败
