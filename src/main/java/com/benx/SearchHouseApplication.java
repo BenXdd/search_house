@@ -22,4 +22,10 @@ public class SearchHouseApplication {
 	public  String haha(){
 		return "11,11";
 	}
+
+	@GetMapping("/haha")
+	public  String haha11(){
+		return "11,11";
+	}
+
 }
