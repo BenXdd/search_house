@@ -17,4 +17,9 @@ public class SearchHouseApplication {
 	public String hello(){
 		return "Hello,BenX";
 	}
+
+	@GetMapping("/haha")
+	public  String haha(){
+		return "11,11";
+	}
 }
